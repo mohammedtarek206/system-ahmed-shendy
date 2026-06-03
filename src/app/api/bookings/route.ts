@@ -1,0 +1,73 @@
+import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/db";
+import Booking from "@/models/Booking";
+import Group from "@/models/Group";
+
+export async function GET() {
+  try {
+    await connectToDatabase();
+    const bookings = await Booking.find({}).sort({ createdAt: -1 });
+    return NextResponse.json(bookings);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    await connectToDatabase();
+    const body = await request.json();
+    const { fullName, phone, parentPhone, notes, groupId } = body;
+
+    if (!fullName || !phone || !parentPhone || !groupId) {
+      return NextResponse.json(
+        { error: "جميع الحقول المطلوبة يجب إدخالها" },
+        { status: 400 }
+      );
+    }
+
+    // Check if group exists and is open
+    const group = await Group.findOne({ id: groupId });
+    if (!group) {
+      return NextResponse.json(
+        { error: "المجموعة الدراسية المختارة غير موجودة" },
+        { status: 404 }
+      );
+    }
+
+    if (!group.isOpen) {
+      return NextResponse.json(
+        { error: "عذراً، باب الحجز مغلق حالياً لهذه المجموعة" },
+        { status: 400 }
+      );
+    }
+
+    // Generate unique sequential Booking ID
+    const count = await Booking.countDocuments({});
+    const bookingId = `ALAMEED-${1001 + count}`;
+
+    const newBooking = await Booking.create({
+      bookingId,
+      fullName,
+      phone,
+      parentPhone,
+      notes,
+      groupId,
+    });
+
+    return NextResponse.json({ success: true, booking: newBooking });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// Clears all bookings (Danger zone action)
+export async function DELETE() {
+  try {
+    await connectToDatabase();
+    await Booking.deleteMany({});
+    return NextResponse.json({ success: true, message: "تم حذف جميع الحجوزات بنجاح" });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
