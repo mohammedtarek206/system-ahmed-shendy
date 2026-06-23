@@ -42,9 +42,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate unique sequential Booking ID
-    const count = await Booking.countDocuments({});
-    const bookingId = `ALAMEED-${1001 + count}`;
+    // Generate unique sequential Booking ID safely
+    let nextIdNumber = 1001;
+    const lastBooking = await Booking.findOne().sort({ createdAt: -1 });
+    
+    if (lastBooking && lastBooking.bookingId && lastBooking.bookingId.startsWith('ALAMEED-')) {
+      const lastIdStr = lastBooking.bookingId.split('-')[1];
+      const lastIdNum = parseInt(lastIdStr, 10);
+      if (!isNaN(lastIdNum)) {
+        nextIdNumber = lastIdNum + 1;
+      }
+    }
+
+    let bookingId = `ALAMEED-${nextIdNumber}`;
+    let isUnique = false;
+
+    // Ensure absolutely no duplicates in case of race conditions or manual deletions
+    while (!isUnique) {
+      const existing = await Booking.findOne({ bookingId });
+      if (existing) {
+        nextIdNumber++;
+        bookingId = `ALAMEED-${nextIdNumber}`;
+      } else {
+        isUnique = true;
+      }
+    }
 
     const newBooking = await Booking.create({
       bookingId,
