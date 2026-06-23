@@ -53,6 +53,11 @@ export async function POST(request: Request) {
       parentPhone,
       notes,
       groupId,
+      grade: group.grade,
+      center: group.center,
+      days: group.days,
+      time: group.time,
+      groupName: group.groupName,
     });
 
     return NextResponse.json({ success: true, booking: newBooking });

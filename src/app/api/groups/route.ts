@@ -3,41 +3,41 @@ import { connectToDatabase } from "@/lib/db";
 import Group from "@/models/Group";
 import Booking from "@/models/Booking";
 
-const defaultGroups = [
-  {
-    id: "g1",
-    grade: "الصف الثالث الثانوي",
-    subject: "(إحصاء)",
-    days: "السبت والثلاثاء",
-    time: "11:30 صباحاً",
-    isOpen: true,
-    color: "from-blue-500 to-primary-600",
-    bgLight: "bg-blue-50 dark:bg-blue-900/10",
-    borderLight: "border-blue-200 dark:border-blue-800",
-  },
-  {
-    id: "g2",
-    grade: "الصف الثاني الثانوي",
-    subject: "(بكالوريا)",
-    days: "السبت والثلاثاء",
-    time: "1:00 ظهراً",
-    isOpen: false,
-    color: "from-accent-500 to-accent-600",
-    bgLight: "bg-orange-50 dark:bg-orange-900/10",
-    borderLight: "border-orange-200 dark:border-orange-800",
-  },
-];
+import { groupsData as defaultGroups } from "@/lib/data";
 
 export async function GET() {
   try {
     await connectToDatabase();
 
-    // Check if groups exist in MongoDB, if not seed them
-    let groups = await Group.find({});
-    if (groups.length === 0) {
-      await Group.insertMany(defaultGroups);
-      groups = await Group.find({});
+    // Sync groups from data.ts to MongoDB
+    for (const defaultGroup of defaultGroups) {
+      const exists = await Group.findOne({ id: defaultGroup.id });
+      if (!exists) {
+        await Group.create(defaultGroup);
+        console.log(`[Seed] Inserted missing group: ${defaultGroup.id} - ${defaultGroup.grade}`);
+      } else {
+        // Update schema fields in case they changed, but preserve isOpen
+        await Group.updateOne(
+          { id: defaultGroup.id },
+          {
+            $set: {
+              grade: defaultGroup.grade,
+              center: defaultGroup.center,
+              groupName: defaultGroup.groupName,
+              days: defaultGroup.days,
+              time: defaultGroup.time,
+              maxSeats: defaultGroup.maxSeats || 50,
+              color: defaultGroup.color,
+              bgLight: defaultGroup.bgLight,
+              borderLight: defaultGroup.borderLight
+            }
+          }
+        );
+      }
     }
+
+    let groups = await Group.find({});
+    console.log(`[API] Total groups retrieved from DB: ${groups.length}`);
 
     // Dynamic booked seats calculation for each group
     const groupsWithSeats = await Promise.all(

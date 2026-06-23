@@ -11,13 +11,19 @@ interface Booking {
   parentPhone: string;
   notes?: string;
   groupId: string;
+  grade: string;
+  center: string;
+  groupName: string;
+  time: string;
   createdAt: string;
 }
 
 interface Group {
   id: string;
   grade: string;
-  subject: string;
+  center: string;
+  groupName: string;
+  time: string;
 }
 
 export default function StudentsPage() {
@@ -83,7 +89,7 @@ export default function StudentsPage() {
 
   // Group mappings
   const groupMap = groups.reduce((acc: any, g) => {
-    acc[g.id] = `${g.grade} ${g.subject}`;
+    acc[g.id] = { grade: g.grade, center: g.center, groupName: g.groupName, time: g.time };
     return acc;
   }, {});
 
@@ -142,7 +148,7 @@ export default function StudentsPage() {
             <option value="">جميع الصفوف</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.grade} {g.subject}
+                {g.grade} - {g.center} - {g.groupName}
               </option>
             ))}
           </select>
@@ -163,6 +169,9 @@ export default function StudentsPage() {
                   <th className="p-4 whitespace-nowrap">رقم الهاتف</th>
                   <th className="p-4 whitespace-nowrap">رقم ولي الأمر</th>
                   <th className="p-4 whitespace-nowrap">الصف الدراسي</th>
+                  <th className="p-4 whitespace-nowrap">السنتر</th>
+                  <th className="p-4 whitespace-nowrap">المجموعة</th>
+                  <th className="p-4 whitespace-nowrap">الموعد</th>
                   <th className="p-4 whitespace-nowrap">تاريخ الحجز</th>
                   <th className="p-4 whitespace-nowrap text-center">إجراءات</th>
                 </tr>
@@ -176,7 +185,22 @@ export default function StudentsPage() {
                     <td className="p-4 dir-ltr text-right">{student.parentPhone}</td>
                     <td className="p-4">
                       <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold">
-                        {groupMap[student.groupId] || student.groupId}
+                        {student.grade || groupMap[student.groupId]?.grade || "-"}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+                        {student.center || groupMap[student.groupId]?.center || "-"}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+                        {student.groupName || groupMap[student.groupId]?.groupName || "-"}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+                        {student.time || groupMap[student.groupId]?.time || "-"}
                       </span>
                     </td>
                     <td className="p-4 text-sm">{new Date(student.createdAt).toLocaleDateString("ar-EG")}</td>

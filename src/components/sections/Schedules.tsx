@@ -4,30 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import Group from "@/models/Group";
 import Booking from "@/models/Booking";
 
-const defaultGroups = [
-  {
-    id: "g1",
-    grade: "الصف الثالث الثانوي",
-    subject: "(إحصاء)",
-    days: "السبت والثلاثاء",
-    time: "11:30 صباحاً",
-    isOpen: true,
-    color: "from-blue-500 to-primary-600",
-    bgLight: "bg-blue-50 dark:bg-blue-900/10",
-    borderLight: "border-blue-200 dark:border-blue-800",
-  },
-  {
-    id: "g2",
-    grade: "الصف الثاني الثانوي",
-    subject: "(بكالوريا)",
-    days: "السبت والثلاثاء",
-    time: "1:00 ظهراً",
-    isOpen: false,
-    color: "from-accent-500 to-accent-600",
-    bgLight: "bg-orange-50 dark:bg-orange-900/10",
-    borderLight: "border-orange-200 dark:border-orange-800",
-  },
-];
+import { groupsData as defaultGroups } from "@/lib/data";
 
 // Force dynamic fetch so updates inside admin dashboard instantly reflect on homepage
 export const dynamic = "force-dynamic";
@@ -39,11 +16,34 @@ export async function Schedules() {
   try {
     await connectToDatabase();
 
-    let groups = await Group.find({});
-    if (groups.length === 0) {
-      await Group.insertMany(defaultGroups);
-      groups = await Group.find({});
+    // Sync groups from data.ts to MongoDB
+    for (const defaultGroup of defaultGroups) {
+      const exists = await Group.findOne({ id: defaultGroup.id });
+      if (!exists) {
+        await Group.create(defaultGroup);
+        console.log(`[Schedules Seed] Inserted missing group: ${defaultGroup.id}`);
+      } else {
+        await Group.updateOne(
+          { id: defaultGroup.id },
+          {
+            $set: {
+              grade: defaultGroup.grade,
+              center: defaultGroup.center,
+              groupName: defaultGroup.groupName,
+              days: defaultGroup.days,
+              time: defaultGroup.time,
+              maxSeats: defaultGroup.maxSeats || 50,
+              color: defaultGroup.color,
+              bgLight: defaultGroup.bgLight,
+              borderLight: defaultGroup.borderLight
+            }
+          }
+        );
+      }
     }
+
+    let groups = await Group.find({});
+    console.log(`[Schedules] Total groups retrieved from DB: ${groups.length}`);
 
     groupsData = await Promise.all(
       groups.map(async (g) => {
@@ -51,7 +51,8 @@ export async function Schedules() {
         return {
           id: g.id,
           grade: g.grade,
-          subject: g.subject,
+          center: g.center,
+          groupName: g.groupName,
           days: g.days,
           time: g.time,
           isOpen: g.isOpen,
@@ -101,7 +102,7 @@ export async function Schedules() {
                       {group.grade}
                     </h3>
                     <span className="inline-block px-3 py-1 rounded-full bg-white dark:bg-slate-800 text-sm font-bold shadow-sm text-slate-700 dark:text-slate-300">
-                      {group.subject}
+                      {group.center} - {group.groupName}
                     </span>
                   </div>
                   <div

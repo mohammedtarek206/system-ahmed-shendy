@@ -14,20 +14,26 @@ export async function GET() {
     
     // Create a group lookup map
     const groupMap = groups.reduce((acc: any, g: any) => {
-      acc[g.id] = `${g.grade} ${g.subject}`;
+      acc[g.id] = { grade: g.grade, center: g.center, groupName: g.groupName, time: g.time };
       return acc;
     }, {});
 
     // Format data for Excel with Arabic headers
-    const excelData = bookings.map((b: any) => ({
-      "رقم الحجز": b.bookingId,
-      "اسم الطالب": b.fullName,
-      "رقم الهاتف": b.phone,
-      "رقم ولي الأمر": b.parentPhone,
-      "المجموعة": groupMap[b.groupId] || b.groupId,
-      "تاريخ التسجيل": new Date(b.createdAt).toLocaleDateString("ar-EG"),
-      "ملاحظات": b.notes || "",
-    }));
+    const excelData = bookings.map((b: any) => {
+      const g = groupMap[b.groupId] || {};
+      return {
+        "رقم الحجز": b.bookingId,
+        "اسم الطالب": b.fullName,
+        "رقم الهاتف": b.phone,
+        "رقم ولي الأمر": b.parentPhone,
+        "الصف الدراسي": b.grade || g.grade || "-",
+        "السنتر": b.center || g.center || "-",
+        "المجموعة": b.groupName || g.groupName || "-",
+        "الموعد": b.time || g.time || "-",
+        "تاريخ التسجيل": new Date(b.createdAt).toLocaleDateString("ar-EG"),
+        "ملاحظات": b.notes || "",
+      };
+    });
 
     // Generate Excel worksheet and workbook
     const worksheet = XLSX.utils.json_to_sheet(excelData);

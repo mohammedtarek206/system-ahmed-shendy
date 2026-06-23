@@ -9,7 +9,8 @@ import Link from "next/link";
 interface Group {
   id: string;
   grade: string;
-  subject: string;
+  center: string;
+  groupName: string;
   days: string;
   time: string;
   isOpen: boolean;
@@ -131,7 +132,7 @@ function BookingFormContent() {
         <div>
           <p className="text-sm text-primary-600 dark:text-primary-400 font-bold mb-1">المجموعة المختارة:</p>
           <p className="font-bold text-slate-900 dark:text-white">
-            {selectedGroup.grade} {selectedGroup.subject} - {selectedGroup.days} ({selectedGroup.time})
+            {selectedGroup.grade} - {selectedGroup.center} - {selectedGroup.groupName} - {selectedGroup.days} ({selectedGroup.time})
           </p>
         </div>
       </motion.div>

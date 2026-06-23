@@ -7,6 +7,11 @@ export interface IBooking extends Document {
   parentPhone: string;
   notes?: string;
   groupId: string;
+  grade: string;
+  center: string;
+  days: string;
+  time: string;
+  groupName: string;
   createdAt: Date;
 }
 
@@ -18,8 +23,16 @@ const BookingSchema: Schema = new Schema(
     parentPhone: { type: String, required: true },
     notes: { type: String },
     groupId: { type: String, required: true },
+    grade: { type: String, required: true },
+    center: { type: String, required: true },
+    days: { type: String, required: true },
+    time: { type: String, required: true },
+    groupName: { type: String, required: true },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Booking || mongoose.model<IBooking>("Booking", BookingSchema);
+if (mongoose.models.Booking) {
+  delete mongoose.models.Booking;
+}
+export default mongoose.model<IBooking>("Booking", BookingSchema);

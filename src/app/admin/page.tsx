@@ -7,9 +7,11 @@ import { motion } from "framer-motion";
 interface Group {
   id: string;
   grade: string;
-  subject: string;
+  center: string;
+  groupName: string;
   days: string;
   time: string;
+  maxSeats: number;
   isOpen: boolean;
   color: string;
   bgLight: string;
@@ -160,14 +162,29 @@ export default function AdminDashboard() {
             {groups.map((group) => {
               return (
                 <div key={group.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <p className="font-bold text-slate-900 dark:text-white">{group.grade}</p>
-                      <p className="text-sm text-slate-500">{group.days} - {group.time}</p>
+                      <p className="font-bold text-slate-900 dark:text-white">
+                        {group.grade} - {group.center}
+                      </p>
+                      <p className="text-sm text-slate-500 font-medium">
+                        {group.groupName} | {group.days} - {group.time}
+                      </p>
                     </div>
-                    <div className="text-left bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
-                      <p className="font-bold text-slate-900 dark:text-white text-xl dir-ltr">{group.bookedSeats}</p>
-                      <p className="text-xs text-slate-500">طالب مسجل</p>
+                    <div className="text-left bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg flex flex-col items-end gap-1">
+                      <div className="flex gap-2">
+                        <div className="text-center">
+                          <p className="font-bold text-slate-900 dark:text-white text-xl dir-ltr">{group.bookedSeats}</p>
+                          <p className="text-xs text-slate-500">مسجل</p>
+                        </div>
+                        <div className="w-px bg-slate-300 dark:bg-slate-600"></div>
+                        <div className="text-center">
+                          <p className="font-bold text-green-600 dark:text-green-400 text-lg mt-1">
+                            غير محدد
+                          </p>
+                          <p className="text-xs text-slate-500">متبقي</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   

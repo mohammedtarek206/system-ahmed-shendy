@@ -8,7 +8,8 @@ import Link from "next/link";
 interface Group {
   id: string;
   grade: string;
-  subject: string;
+  center: string;
+  groupName: string;
   days: string;
   time: string;
   isOpen: boolean;
@@ -22,12 +23,14 @@ export default function GroupSelectionPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
 
   const fetchGroups = async () => {
     try {
       const res = await fetch("/api/groups");
       if (res.ok) {
         const data = await res.json();
+        console.log(`[Booking Page] Retrieved ${data.length} groups from API.`);
         setGroups(data);
       } else {
         setError("فشل تحميل المجموعات الدراسية.");
@@ -43,6 +46,14 @@ export default function GroupSelectionPage() {
     fetchGroups();
   }, []);
 
+  const filteredGroups = groups.filter(
+    (group) => selectedGrade === null || group.grade === selectedGrade
+  );
+  
+  if (!isLoading && !error) {
+    console.log(`[Booking Page] Rendered groups after filter (${selectedGrade || "الكل"}):`, filteredGroups.length);
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-28 pb-20">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -57,9 +68,37 @@ export default function GroupSelectionPage() {
             <span className="text-4xl">🎓</span> اختر مجموعتك الدراسية
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            اختر المجموعة المناسبة لك ثم أكمل عملية الحجز.
+            اختر الصف الدراسي ثم المجموعة المناسبة لك وأكمل عملية الحجز.
           </p>
         </div>
+
+        {!isLoading && !error && (
+          <div className="flex flex-wrap justify-center gap-4 mb-10">
+            <button
+              onClick={() => setSelectedGrade(null)}
+              className={`px-6 py-2 rounded-xl font-bold transition-colors ${
+                selectedGrade === null
+                  ? "bg-primary-600 text-white shadow-lg"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+              }`}
+            >
+              الكل
+            </button>
+            {Array.from(new Set(groups.map((g) => g.grade))).map((grade) => (
+              <button
+                key={grade}
+                onClick={() => setSelectedGrade(grade)}
+                className={`px-6 py-2 rounded-xl font-bold transition-colors ${
+                  selectedGrade === grade
+                    ? "bg-primary-600 text-white shadow-lg"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+                }`}
+              >
+                {grade}
+              </button>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -79,7 +118,7 @@ export default function GroupSelectionPage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-8">
-            {groups.map((group, idx) => {
+            {filteredGroups.map((group, idx) => {
               const isClosed = !group.isOpen;
 
               return (
@@ -98,7 +137,7 @@ export default function GroupSelectionPage() {
                         {group.grade}
                       </h3>
                       <span className="inline-block px-3 py-1 rounded-full bg-white dark:bg-slate-800 text-sm font-bold shadow-sm text-slate-700 dark:text-slate-300">
-                        {group.subject}
+                        {group.center} - {group.groupName}
                       </span>
                     </div>
                     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${group.color} flex items-center justify-center text-white shadow-lg`}>
@@ -152,7 +191,7 @@ export default function GroupSelectionPage() {
                     )}
                   </div>
                 </motion.div>
-              );
+                );
             })}
           </div>
         )}
