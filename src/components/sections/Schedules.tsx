@@ -55,6 +55,7 @@ export async function Schedules() {
           groupName: g.groupName,
           days: g.days,
           time: g.time,
+          maxSeats: g.maxSeats || 50,
           isOpen: g.isOpen,
           color: g.color,
           bgLight: g.bgLight,
