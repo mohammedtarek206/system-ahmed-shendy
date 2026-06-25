@@ -2,55 +2,93 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Group from "@/models/Group";
 import Booking from "@/models/Booking";
-
-import { groupsData as defaultGroups } from "@/lib/data";
+import Grade from "@/models/Grade";
 
 export async function GET() {
   try {
     await connectToDatabase();
 
-    // Sync groups from data.ts to MongoDB
-    for (const defaultGroup of defaultGroups) {
-      const exists = await Group.findOne({ id: defaultGroup.id });
-      if (!exists) {
-        await Group.create(defaultGroup);
-        console.log(`[Seed] Inserted missing group: ${defaultGroup.id} - ${defaultGroup.grade}`);
-      } else {
-        // Update schema fields in case they changed, but preserve isOpen
-        await Group.updateOne(
-          { id: defaultGroup.id },
-          {
-            $set: {
-              grade: defaultGroup.grade,
-              center: defaultGroup.center,
-              groupName: defaultGroup.groupName,
-              days: defaultGroup.days,
-              time: defaultGroup.time,
-              maxSeats: defaultGroup.maxSeats || 50,
-              color: defaultGroup.color,
-              bgLight: defaultGroup.bgLight,
-              borderLight: defaultGroup.borderLight
-            }
-          }
-        );
-      }
-    }
+    const groups = await Group.find({});
 
-    let groups = await Group.find({});
-    console.log(`[API] Total groups retrieved from DB: ${groups.length}`);
-
-    // Dynamic booked seats calculation for each group
-    const groupsWithSeats = await Promise.all(
+    // Dynamic booked seats calculation & booking fee lookup for each group
+    const groupsWithDetails = await Promise.all(
       groups.map(async (group) => {
         const count = await Booking.countDocuments({ groupId: group.id });
+        
+        // Lookup grade to fetch default booking fee if group doesn't have an override
+        let finalFee = group.bookingFee;
+        if (finalFee === undefined || finalFee === null) {
+          const gradeObj = await Grade.findOne({ name: group.grade });
+          finalFee = gradeObj ? gradeObj.bookingFee : 0;
+        }
+
         return {
           ...group.toObject(),
           bookedSeats: count,
+          bookingFee: finalFee,
         };
       })
     );
 
-    return NextResponse.json(groupsWithSeats);
+    return NextResponse.json(groupsWithDetails);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    await connectToDatabase();
+    const body = await request.json();
+    const {
+      grade,
+      center,
+      groupName,
+      days,
+      time,
+      maxSeats,
+      isOpen,
+      teacher,
+      notes,
+      bookingFee,
+      color,
+      bgLight,
+      borderLight,
+    } = body;
+
+    if (!grade || !center || !groupName || !days || !time) {
+      return NextResponse.json(
+        { error: "الرجاء إدخال الحقول الأساسية: المرحلة، السنتر، اسم المجموعة، الأيام، والوقت" },
+        { status: 400 }
+      );
+    }
+
+    // Auto-generate ID if not provided
+    const id = `g_${Date.now()}`;
+
+    // Theme defaults
+    const defaultColor = color || "from-blue-500 to-primary-600";
+    const defaultBgLight = bgLight || "bg-blue-50 dark:bg-blue-900/10";
+    const defaultBorderLight = borderLight || "border-blue-200 dark:border-blue-800";
+
+    const newGroup = await Group.create({
+      id,
+      grade,
+      center,
+      groupName,
+      days,
+      time,
+      maxSeats: maxSeats !== undefined ? Number(maxSeats) : 50,
+      isOpen: isOpen !== false,
+      teacher: teacher || "",
+      notes: notes || "",
+      bookingFee: bookingFee !== undefined && bookingFee !== "" ? Number(bookingFee) : undefined,
+      color: defaultColor,
+      bgLight: defaultBgLight,
+      borderLight: defaultBorderLight,
+    });
+
+    return NextResponse.json(newGroup);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -76,7 +114,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 });
     }
 
-    // Get updated booking count
     const count = await Booking.countDocuments({ groupId: id });
 
     return NextResponse.json({

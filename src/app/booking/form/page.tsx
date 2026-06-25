@@ -15,6 +15,7 @@ interface Group {
   time: string;
   isOpen: boolean;
   color: string;
+  bookingFee: number;
 }
 
 function BookingFormContent() {
@@ -124,16 +125,22 @@ function BookingFormContent() {
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-2xl p-4 mb-8 flex items-center gap-4 shadow-sm"
+        className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm"
       >
-        <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm shrink-0">
-          <BookOpen className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+            <BookOpen className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          </div>
+          <div>
+            <p className="text-sm text-primary-600 dark:text-primary-400 font-bold mb-1">المجموعة المختارة:</p>
+            <p className="font-bold text-slate-900 dark:text-white">
+              {selectedGroup.grade} - {selectedGroup.center} - {selectedGroup.groupName} - {selectedGroup.days} ({selectedGroup.time})
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm text-primary-600 dark:text-primary-400 font-bold mb-1">المجموعة المختارة:</p>
-          <p className="font-bold text-slate-900 dark:text-white">
-            {selectedGroup.grade} - {selectedGroup.center} - {selectedGroup.groupName} - {selectedGroup.days} ({selectedGroup.time})
-          </p>
+        <div className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-2 flex items-center gap-2 font-black shrink-0">
+          <span>💰 رسوم تأكيد الحجز:</span>
+          <span>{selectedGroup.bookingFee} جنيه</span>
         </div>
       </motion.div>
 
@@ -236,10 +243,15 @@ function BookingFormContent() {
           </div>
 
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="mb-6 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 flex items-center justify-between font-black text-emerald-800 dark:text-emerald-400">
+              <span>💰 رسوم تأكيد الحجز المطلوبة:</span>
+              <span className="text-xl">{selectedGroup.bookingFee} جنيه</span>
+            </div>
+            
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full py-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
             >
               {isLoading ? (
                 <>

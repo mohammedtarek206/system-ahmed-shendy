@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, TrendingUp, BookOpen, Loader2 } from "lucide-react";
+import { Users, TrendingUp, BookOpen, Loader2, MapPin, GraduationCap, UsersRound } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 interface Group {
   id: string;
@@ -21,43 +22,31 @@ interface Group {
 
 export default function AdminDashboard() {
   const [groups, setGroups] = useState<Group[]>([]);
-  const [globalSettings, setGlobalSettings] = useState({
-    isBookingOpen: true,
-  });
+  const [globalSettings, setGlobalSettings] = useState({ isBookingOpen: true });
   const [isLoading, setIsLoading] = useState(true);
   const [todayBookingsCount, setTodayBookingsCount] = useState(0);
+  const [centersCount, setCentersCount] = useState(0);
+  const [gradesCount, setGradesCount] = useState(0);
 
   const fetchData = async () => {
     try {
-      // 1. Fetch groups
-      const groupsRes = await fetch("/api/groups");
-      let fetchedGroups: Group[] = [];
-      if (groupsRes.ok) {
-        fetchedGroups = await groupsRes.json();
-        setGroups(fetchedGroups);
-      }
+      const [groupsRes, settingsRes, bookingsRes, centersRes, gradesRes] = await Promise.all([
+        fetch("/api/groups"),
+        fetch("/api/settings"),
+        fetch("/api/bookings"),
+        fetch("/api/centers"),
+        fetch("/api/grades"),
+      ]);
 
-      // 2. Fetch global settings
-      const settingsRes = await fetch("/api/settings");
-      if (settingsRes.ok) {
-        const settingsData = await settingsRes.json();
-        setGlobalSettings({
-          isBookingOpen: settingsData.isBookingOpen,
-        });
-      }
+      if (groupsRes.ok) setGroups(await groupsRes.json());
+      if (settingsRes.ok) { const s = await settingsRes.json(); setGlobalSettings({ isBookingOpen: s.isBookingOpen }); }
+      if (centersRes.ok) { const c = await centersRes.json(); setCentersCount(c.length); }
+      if (gradesRes.ok) { const g = await gradesRes.json(); setGradesCount(g.length); }
 
-      // 3. Fetch bookings to count today's bookings
-      const bookingsRes = await fetch("/api/bookings");
       if (bookingsRes.ok) {
         const bookingsData = await bookingsRes.json();
-        
-        // Count bookings registered today
         const todayStr = new Date().toDateString();
-        const todayCount = bookingsData.filter((b: any) => 
-          new Date(b.createdAt).toDateString() === todayStr
-        ).length;
-        
-        setTodayBookingsCount(todayCount);
+        setTodayBookingsCount(bookingsData.filter((b: any) => new Date(b.createdAt).toDateString() === todayStr).length);
       }
     } catch (error) {
       console.error("Error fetching admin stats:", error);
@@ -121,33 +110,42 @@ export default function AdminDashboard() {
   }
 
   const totalStudents = groups.reduce((acc, g) => acc + (g.bookedSeats || 0), 0);
-  const availableGroups = groups.length;
 
   const stats = [
-    { label: "إجمالي الطلاب", value: totalStudents.toString(), icon: <Users className="w-8 h-8 text-blue-500" />, bg: "bg-blue-50 dark:bg-blue-900/20" },
+    { label: "إجمالي الطلاب المسجلين", value: totalStudents.toString(), icon: <Users className="w-8 h-8 text-blue-500" />, bg: "bg-blue-50 dark:bg-blue-900/20" },
     { label: "حجوزات اليوم", value: todayBookingsCount.toString(), icon: <TrendingUp className="w-8 h-8 text-green-500" />, bg: "bg-green-50 dark:bg-green-900/20" },
-    { label: "المجموعات المتاحة", value: availableGroups.toString(), icon: <BookOpen className="w-8 h-8 text-purple-500" />, bg: "bg-purple-50 dark:bg-purple-900/20" },
+    { label: "المجموعات", value: groups.length.toString(), icon: <UsersRound className="w-8 h-8 text-purple-500" />, bg: "bg-purple-50 dark:bg-purple-900/20" },
+    { label: "السناتر", value: centersCount.toString(), icon: <MapPin className="w-8 h-8 text-orange-500" />, bg: "bg-orange-50 dark:bg-orange-900/20" },
+    { label: "المراحل الدراسية", value: gradesCount.toString(), icon: <GraduationCap className="w-8 h-8 text-teal-500" />, bg: "bg-teal-50 dark:bg-teal-900/20" },
+    { label: "المقاعد المحجوزة", value: `${totalStudents} / ${groups.reduce((a, g) => a + g.maxSeats, 0)}`, icon: <BookOpen className="w-8 h-8 text-indigo-500" />, bg: "bg-indigo-50 dark:bg-indigo-900/20" },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">نظرة عامة</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">نظرة عامة على المنصة</h1>
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/admin/centers" className="px-4 py-2 text-sm font-bold bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 rounded-xl hover:bg-orange-200 dark:hover:bg-orange-900/40 transition-colors">🏢 السناتر</Link>
+          <Link href="/admin/grades" className="px-4 py-2 text-sm font-bold bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 rounded-xl hover:bg-teal-200 dark:hover:bg-teal-900/40 transition-colors">🎓 المراحل</Link>
+          <Link href="/admin/groups" className="px-4 py-2 text-sm font-bold bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-xl hover:bg-purple-200 dark:hover:bg-purple-900/40 transition-colors">👥 المجموعات</Link>
+        </div>
+      </div>
       
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-4">
         {stats.map((stat, idx) => (
-          <motion.div 
+          <motion.div
             key={idx}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-6"
+            transition={{ delay: idx * 0.05 }}
+            className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4"
           >
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${stat.bg}`}>
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${stat.bg}`}>
               {stat.icon}
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</h3>
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">{stat.label}</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</h3>
             </div>
           </motion.div>
         ))}
@@ -171,19 +169,17 @@ export default function AdminDashboard() {
                         {group.groupName} | {group.days} - {group.time}
                       </p>
                     </div>
-                    <div className="text-left bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg flex flex-col items-end gap-1">
-                      <div className="flex gap-2">
-                        <div className="text-center">
-                          <p className="font-bold text-slate-900 dark:text-white text-xl dir-ltr">{group.bookedSeats}</p>
-                          <p className="text-xs text-slate-500">مسجل</p>
-                        </div>
-                        <div className="w-px bg-slate-300 dark:bg-slate-600"></div>
-                        <div className="text-center">
-                          <p className="font-bold text-green-600 dark:text-green-400 text-lg mt-1">
-                            غير محدد
-                          </p>
-                          <p className="text-xs text-slate-500">متبقي</p>
-                        </div>
+                    <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 rounded-lg flex gap-3 items-center text-sm">
+                      <div className="text-center">
+                        <p className="font-black text-slate-900 dark:text-white text-lg">{group.bookedSeats}</p>
+                        <p className="text-xs text-slate-500">مسجل</p>
+                      </div>
+                      <div className="w-px h-8 bg-slate-300 dark:bg-slate-600" />
+                      <div className="text-center">
+                        <p className={`font-black text-lg ${(group.maxSeats - group.bookedSeats) <= 5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                          {Math.max(0, group.maxSeats - group.bookedSeats)}
+                        </p>
+                        <p className="text-xs text-slate-500">متبقي</p>
                       </div>
                     </div>
                   </div>

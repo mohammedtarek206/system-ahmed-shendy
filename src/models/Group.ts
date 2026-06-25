@@ -12,6 +12,9 @@ export interface IGroup extends Document {
   color: string;
   bgLight: string;
   borderLight: string;
+  teacher?: string;
+  notes?: string;
+  bookingFee?: number;
 }
 
 const GroupSchema: Schema = new Schema(
@@ -27,6 +30,9 @@ const GroupSchema: Schema = new Schema(
     color: { type: String, required: true },
     bgLight: { type: String, required: true },
     borderLight: { type: String, required: true },
+    teacher: { type: String, default: "" },
+    notes: { type: String, default: "" },
+    bookingFee: { type: Number },
   },
   { timestamps: true }
 );

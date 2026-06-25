@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Booking from "@/models/Booking";
 import Group from "@/models/Group";
+import Grade from "@/models/Grade";
 
 export async function GET() {
   try {
@@ -42,6 +43,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check capacity / seat limit
+    const bookedCount = await Booking.countDocuments({ groupId });
+    if (bookedCount >= group.maxSeats) {
+      return NextResponse.json(
+        { error: "🚫 عذراً، تم اكتمال العدد في هذه المجموعة واكتمل الحجز تلقائياً." },
+        { status: 400 }
+      );
+    }
+
+    // Determine booking fee dynamically
+    let finalBookingFee = group.bookingFee;
+    if (finalBookingFee === undefined || finalBookingFee === null) {
+      const gradeObj = await Grade.findOne({ name: group.grade });
+      finalBookingFee = gradeObj ? gradeObj.bookingFee : 0;
+    }
+
     // Generate unique sequential Booking ID safely
     let nextIdNumber = 1001;
     const lastBooking = await Booking.findOne().sort({ createdAt: -1 });
@@ -80,6 +97,7 @@ export async function POST(request: Request) {
       days: group.days,
       time: group.time,
       groupName: group.groupName,
+      bookingFee: finalBookingFee,
     });
 
     return NextResponse.json({ success: true, booking: newBooking });
